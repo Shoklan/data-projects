@@ -1,7 +1,7 @@
 ---
 title: "GDP per Capita Dataset"
 author: "Collin Mitchell"
-date: "December 30, 2016"
+date: "January 1st, 2017"
 output: html_document
 ---
 
@@ -9,22 +9,106 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Abstract
+Found a dataset uploaded by an account called gmoney on [Data.world](https://data.world/gmoney/gdp-per-capita-by-state) to follow up with after finishing the Exploratory Analysis Case Study on [Datacamp]{http://www.datacamp.com}.
+This is that story.
+```{r, echo=FALSE}
+# Packages
+library( tidyverse )
+library( data.table )
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+# Correct path
+# path<- file.path( 'Code', 'data-projects', 'dataworld', 'gdp-per-state')
+# setwd( path )
 ```
 
-## Including Plots
+## Procedure
+Working with Hadley's tools requires everything to be formatted in the tidy data format. For reference, you can see [this](http://vita.had.co.nz/papers/tidy-data.pdf). After attempting to use some of the tools designed for this -reshape2 and tidyr - I ended running my own way through this.
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+I took the labels from the first column and then removed them from the dataset.
+```{r}
+# Grab State/Region Labels
+states <- data$V1
+data[, V1 := NULL]
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+A basic transpose of the data table will get the yearly data into rows instead of the columns - where I want them. 
+```{r}
+# Transpose to correct and collect Years
+temp<- t( data )
+years<- as.numeric( rownames( temp ))
+```
+
+Convert back to a data.table to return to the Tidyverse
+```{r}
+# Convert Matrix -> Data.Table
+data<- data.table( temp )
+```
+
+Insert the labels back into the dataset and remove the blank columns that shouldn't be in the dataset; not sure why they're there.
+```{r}
+# Finalize into Tidy Format
+colnames( data )<- states
+data[, c('V61', 'V62', 'V63', 'V64') := NULL]
+```
+
+I want to use the year as the X variable in plotting so I have to include it in the dataset versus using it for the rownames.
+For some reason, data table throws a warning about internal copying. It's not all that relevant at the moment so I'm suppressing it.
+```{r}
+# This runs without issues; ignore warnings
+suppressWarnings( data[, Year := years ] )
+```
+
+
+Now, I didn't want to type out all the code by hand for each line so - in the lazy fashion - I wrote a function to compile each line and add it to the graph. This is going to be added to my toolset.
+```{r}
+# function to pool geom_line data
+updateGraph<- function( item ){
+  geom_line( aes_q( y = as.name( item ), color = item ))
+}
+```
+
+Then, plot all the data onto one graph.
+```{r}
+# Plot all Data
+gData<- ggplot( data, aes( x = Year))
+gData + map( colnames( data )[ -ncol( data )], updateGraph  ) + ggtitle("All Data GDPs") + labs( y = 'GDP')
+```
+
+Needless to say, this is worthless since we can't draw any real conclusions at a glance. So, we're going to split the data apart into state, regional and the country subsets.
+```{r}
+# Regions of interest
+stateData <- select( data, c(Alabama:Delaware, Florida:`New England`, Year ))
+regionData<- select( data, c(`District of Columbia`, Mideast:`Far West`   , Year ))
+UnitedData<- select( data, c(`United States`      , Year ))
+```
+
+First we'll look at the state data:
+```{r}
+# Plot State Data
+gStateData<- ggplot( stateData, aes( x = Year))
+gStateData + map( colnames( stateData )[ -ncol( stateData )], updateGraph  ) + ggtitle("State GDPs") + labs( y = 'GDP')
+```
+The only trend that seems clear is that most states have an increasing GDP.
+
+So, lets move on to Regions.
+```{r}
+# Plot Region Data
+gRegionData<- ggplot( regionData, aes( x = Year))
+gRegionData + map( colnames( regionData )[ -ncol( regionData )], updateGraph  ) + ggtitle("Regional GDPs") + labs( y = 'GDP')
+```
+Oh wow. There is a very clear difference in GDP here. The District of Columbia is many magnitudes larger than any other region. In fact, it's the only one that's ended much higher than it started. The other regions made almost no progress at all. For such a small area to control that much GDP is actually kind of unsettling.
+
+Lastly, we're going to plot the the United States
+```{r}
+# Plot United States Only Data
+gUnitedData<- ggplot( UnitedData, aes( x = Year))
+gUnitedData + map( colnames( UnitedData )[ -ncol( UnitedData )], updateGraph  ) + ggtitle("United States GDP") + labs( y = 'GDP')
+```
+
+## Results
+This ended up being a reasonably simple exercise.
+The dataset beyond this is too limited to do anything interesting with.
+A linear model would be overkill.
+
