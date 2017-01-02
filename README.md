@@ -1,6 +1,7 @@
 # data-projects
 Combination of Different Online Project Sites
 
-## GPD Exploratory Analysis
-root: ./dataworld/gpd-per-state
+## Projects
+1. GPD Exploratory Analysis
+a. root: ./dataworld/gpd-per-state
 
