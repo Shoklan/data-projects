@@ -1,0 +1,105 @@
+---
+title: "DC Crime Data"
+author: "Collin Mitchell"
+date: "August 19, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r error=FALSE, warning=FALSE, echo=FALSE}
+
+```
+
+# Introduction
+After a bit of exploration of the data, I found that some of the columns are not going to be useful for this analyis. So, I'm just going to go ahead and remove some of them.
+
+```{r }
+library(data.table)
+library(ggplot2)
+library(stringr)
+library(dplyr)
+
+# Going to convert to actual Date type objects since they'll be useful for Graphing and analysis.
+# don't need to adjust timezone since DC is EST
+data<- fread("crime_homicide_subset.csv")
+data$REPORT_DAT<- as.POSIXct(data$REPORT_DAT, format = '%m/%d/%Y %H:%M')
+
+# Null out the data that I don't need.
+data[, .(year := NULL,
+         week := NULL,
+         day  := NULL,
+         hour := NULL)]
+
+# Going to need this for data analysis in next section
+yearScale <- data.table( year = c(2011, 2012, 2013, 2014, 2015, 2016), count = as.numeric(0))
+```
+
+# Relative Amount of Crime
+Since the data given is only for the first five months, we're going to compare the rates of crime from 2011 to 2016. Please note that, to compare like with like, we're going to ignore the data from July to December for the years 2011 to 2016.
+
+```{r}
+# Please note that this is almost certainly not efficient code; this can be done with data.table internally.
+yearScale$count[1] <- nrow( filter(data, REPORT_DAT < as.POSIXct('2011/6/1')) )
+yearScale$count[2] <- nrow( filter(data, REPORT_DAT < as.POSIXct('2012/6/1') &  REPORT_DAT > as.POSIXct('2012/1/1')) )
+yearScale$count[3] <- nrow( filter(data, REPORT_DAT < as.POSIXct('2013/6/1') &  REPORT_DAT >= as.POSIXct('2013/1/1')) )
+yearScale$count[4] <- nrow( filter(data, REPORT_DAT < as.POSIXct('2014/6/1') &  REPORT_DAT >= as.POSIXct('2014/1/1')) )
+yearScale$count[5] <- nrow( filter(data, REPORT_DAT < as.POSIXct('2015/6/1') &  REPORT_DAT >= as.POSIXct('2015/1/1')) )
+yearScale$count[6] <- nrow( filter(data, REPORT_DAT > as.POSIXct('2016/1/1') &  REPORT_DAT >= as.POSIXct('2016/1/1')) )
+
+# Plot trending data per year.
+g<- ggplot(yearScale, aes( x = year, y = count)) + geom_point(size = 4) +  geom_smooth(se = TRUE)
+g <- g + ggtitle('Crime Within First 5 Months') + labs(x = 'Year of Crimes', y = 'Count of Crime')
+print( g )
+```
+
+The data shows that there has been a significant increase is Sexual Assult and Homicide for four years. But, this seems to be flattening out over the 2014 to 2016 time period. Sadly, further decreases are apparently not to be expected.
+
+```{r}
+g<- ggplot(data, aes( factor(year), fill = factor(OFFENSE) )) + geom_bar(position = 'dodge')
+g <- g + guides(fill = guide_legend(title = 'Type of Crime')) + labs( x = 'Year', y = 'Frequency') + ggtitle('Crime Type By Year')
+print( g )
+```
+It seems that the rate of Sexual Assult is floating the numbers since Homicide is relativiely stable. So, if you're intent on avoiding most of the crime then what areas should one avoid?
+
+```{r}
+#  remember that data for 2016 is not completed
+districtSubset<- data[, .(count = .N), by = .(year, DISTRICT)]
+g<- ggplot(districtSubset, aes(x = year, y = count, group = DISTRICT, color = DISTRICT)) + geom_line()
+g <- g  + scale_color_gradient(low = 'yellow', high = 'red')
+g <- g + ggtitle("Danger of Districts") + labs(x = 'Year', y = 'Offenses')
+print( g )
+```
+Usually, I would not expect such a clear cut case of increases like that. I'm hesitant to say that the results of this part should be trusted at this point; I'm assuming that something about the code is wrong.
+
+According to [DC Police](http://mpdc.dc.gov/page/police-districts-and-police-service-areas), here are the areas to avoid:
+![](http://mpdc.dc.gov/sites/default/files/dc/sites/mpdc/page_content/images/districtmap_2012.jpg)
+
+# Outliers
+While exploring, there were two instances that are almost certainly data entry errors.
+
+```{r}
+qplot(data$lat, data$long)
+# what is that dot so far away?
+
+outliers<- filter(data, lat< 38.4)
+outliers
+```
+It's actually fascinating to see the shape of DC so clearly from the points of data. Here is a quick verision that increases the size of the points to a more complete shape:
+```{r}
+# 'Cause if we can't have fun, then we wont make it the week - sometimes
+qplot(data$lat, data$long, size = 9)
+```
+
+Moving back to the outliers, the districts listed are from 7 and 4. District 7 might be believable if it wasn't obviosuly in Deleware. And, 4 has well decided to run off and elope with Deleware too.
+
+```{r}
+outliers$DISTRICT
+outliers$year
+```
+
+# Conclusions
+Stay away from higher numbered districts and don't expect crime rates to decrease this year.
+Or, jjust avoid DC all together - goodness knows murder and rape aren't the only sins that area is known for.
