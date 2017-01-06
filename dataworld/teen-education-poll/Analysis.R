@@ -7,6 +7,10 @@ library( rio )
 library( tidyverse )
 library( data.table )
 
+
+path<- file.path( 'Code', 'data-projects', 'dataworld', 'teen-education-poll')
+setwd( path )
+
 # Online URL source: https://data.world/afterschool/teen-education-poll/file/Education%20Poll.pdf
 
 # first we need to correct the data from PDF
@@ -109,3 +113,7 @@ goodEducation<- data.table(
   YesCount = c(18358, 12432, 11918, 3969, 3790),
   NoCount  = c(17065, 9130, 8715, 2154, 2544)
 )
+
+
+export(pollingData, file.path( 'data', 'pollingData.csv') )
+export(goodEducation, file.path( 'data', 'goodEducation.csv') )
