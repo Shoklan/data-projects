@@ -1,7 +1,7 @@
 #   Author: Collin Mitchell
 #     Date: 2017/1/6
 # fin-Date: 2017/1/6
-#     Role: Exploring Crime Data.
+#     Role: Cleaning Poll Data
 
 library( rio )
 library( tidyverse )
