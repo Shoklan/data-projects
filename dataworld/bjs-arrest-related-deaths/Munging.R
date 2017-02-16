@@ -3,6 +3,8 @@
 # fin-Date: ###
 #     Role: Creating data to work with.
 
+
+
 figure1<- data.table(
   month      = c( "June", "July", "August", "September", "October", "November", "December", "January", "February", "March"),
   year       = c(   2015,   2015,     2015,        2015,      2015,       2015,       2015,      2016,       2016,    2016),
