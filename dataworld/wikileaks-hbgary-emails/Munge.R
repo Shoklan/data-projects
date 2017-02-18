@@ -55,6 +55,7 @@ wikileaksEmailScrape <- function( index, url){
   emailData<- unlist(map( emailData, stri_trim))
   emailData<-  emailData[ which(emailData != "") ]
   rm(urlhtml)
+  gc()
   emailData
 }
 
@@ -63,7 +64,7 @@ wikileaksEmailScrape <- function( index, url){
 
 
 ##-- Main --##
-collectedEmails <- map( 1:MAX_EMAIL_COUNT, wikileaksEmailScrape, url = url)
+collectedEmails <- safely(map( 1:MAX_EMAIL_COUNT, wikileaksEmailScrape, url = url))
 Store( collectedEmails )
 
 write.csv(collectedEmails, file = paste0(filepath, "/CollectedEmails.csv" ))
