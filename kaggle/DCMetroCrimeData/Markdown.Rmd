@@ -2,7 +2,9 @@
 title: "DC Crime Data"
 author: "Collin Mitchell"
 date: "August 19, 2016"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -24,7 +26,7 @@ library(dplyr)
 
 # Going to convert to actual Date type objects since they'll be useful for Graphing and analysis.
 # don't need to adjust timezone since DC is EST
-data<- fread("crime_homicide_subset.csv")
+data<- fread("data\\crime_homicide_subset.csv")
 data$REPORT_DAT<- as.POSIXct(data$REPORT_DAT, format = '%m/%d/%Y %H:%M')
 
 # Null out the data that I don't need.
