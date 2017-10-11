@@ -3,7 +3,7 @@
 # Purpose: To download and parse paycheck information from Tops.
 
 ##-- Libraries
-library( purrr)
+library( purrr )
 library( rvest )
 library( stringr )
 
@@ -57,17 +57,35 @@ temp <- loginSession %>%
   # scrape paycheck details
   html_node( "#ViewPayInfo" ) 
 
-# %>% html_table( fill = TRUE)
 
-
-map( temp, str_replace_all, pattern = "[\\r|\\n|\\t]", replace = "")
-
-str_replace_all(tempList, "[\\r|\\n|\\t|NA]", "")
 
 
 # starting to pull apart data 
 tempSlice <- xml_contents( temp )[2] %>% xml_contents()
-indexes <- c(5, 7, 9, 12 )
-tempSlice[ indexes ]
 
+# 9 is personal details
+# 12 is paystub data
+# subset important data
+indexes <- c( 9, 12 )
+tempSlice<- tempSlice[ indexes ]
+
+# normalize the ex-node_set contents
+extractedContents <- map( 1:length( tempSlice ), function(.x){ tempSlice[.x] %>% html_table(header = FALSE, fill = TRUE) %>% as.data.frame()})
+
+
+# earnings block
+earningsBlock <- extractedContents[[2]][3:14, c(1:3, 6, 7)]
+colnames( earningsBlock) <- earningsBlock[1,]
+earningsBlock <- earningsBlock[-1,]
+earningsBlock[11, c(2,3)] <- ""
+rownames(earningsBlock) <- NULL
+
+
+# tax block
+
+
+# union block
+
+# extractedTemp <- extractedContents %>% 
+#   map( str_replace_all, pattern = "[\r|\n|\t]+", replacement = " ")
 
