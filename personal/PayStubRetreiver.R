@@ -11,7 +11,9 @@ library( stringr )
 ##-- Constants
 
 # load private data
+setwd("~/Dropbox/Code/data-projects/personal")
 load( "__data/credentials.R")
+
 
 
 
@@ -72,6 +74,11 @@ tempSlice<- tempSlice[ indexes ]
 # normalize the ex-node_set contents
 extractedContents <- map( 1:length( tempSlice ), function(.x){ tempSlice[.x] %>% html_table(header = FALSE, fill = TRUE) %>% as.data.frame()})
 
+# extract meta data
+generatedRow <- data.frame( x = character(), y = character(), z = character(), stringsAsFactors = FALSE)
+colnames( generatedRow )<- extractedContents[[1]][11, seq(from = 5, to = 9, by = 2)]
+generatedRow[1,]<- extractedContents[[1]][11, seq(from = 6, to = 10, by = 2)]
+
 
 # earnings block
 earningsBlock <- extractedContents[[2]][3:14, c(1:3, 6, 7)]
@@ -80,11 +87,23 @@ earningsBlock <- earningsBlock[-1,]
 earningsBlock[11, c(2,3)] <- ""
 rownames(earningsBlock) <- NULL
 
+generatedRow <- as.data.frame( c( extractedContents[[2]][31, 5], "", "", extractedContents[[2]][31, 6:7]))
+colnames( generatedRow ) <- colnames( earningsBlock )
+earningsBlock <- rbind( earningsBlock, generatedRow )
+
+
 
 # tax block
-
+taxBlock <- extractedContents[[2]][20:24, 2:4]
+colnames( taxBlock ) <- c( "Tax", "Current", "Year To Date")
+rownames( taxBlock )<- NULL
 
 # union block
+unionBlock <- extractedContents[[2]][27:30, 1:3]
+colnames( unionBlock ) <- unionBlock[1, ]
+unionBlock <- unionBlock[-1,]
+rownames( unionBlock ) <- NULL
+
 
 # extractedTemp <- extractedContents %>% 
 #   map( str_replace_all, pattern = "[\r|\n|\t]+", replacement = " ")
