@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# Author: Collin Mitchell
 
 import glob
 import os
@@ -11,8 +12,6 @@ from tika import parser
 # start the tika VM
 tika.initVM()
 
-
-
 # move to where documents are
 os.chdir( 'data')
 
@@ -22,7 +21,7 @@ with open('terms.output', 'a+') as out:
     files.sort()
 
     # there is something wrong with the first two files.
-    for f in files[2:]:
+    for f in files:
         try:
             # get the data from the server
             parsed = parser.from_file( f )

@@ -4,19 +4,23 @@
 
 library( stringr )
 library( tidytext )
-library( tabulizer )
 library( tidyverse )
 library( qdap )
 library( iotools )
 
+library( rvest )
+
 ##-- Functions
 
 
+
+
   ## Download the files.
-urlBase <- "https://archive.org/download/worksofvoltairec%02dvolt/worksofvoltairec%02dvolt.pdf"
+urlBase <- "https://ia801406.us.archive.org/10/items/worksofvoltairec%02dvolt/worksofvoltairec%02dvolt.pdf"
 
   # The file iterates.  
-volumeNumbers<- seq(1, 22, 1)
+volumeNumbers<- seq(3, 22, 1)
+# volumeNumbers<- seq(3, 3, 1)
 
   # Iterate over and download all the files
 walk2( .x = volumeNumbers, .y = volumeNumbers, .f = function(.x, .y){
@@ -24,7 +28,7 @@ walk2( .x = volumeNumbers, .y = volumeNumbers, .f = function(.x, .y){
   urlPieces <- str_split(urlTarget, "/") %>% unlist()
   filename<- urlPieces[ length( urlPieces)]
   
-  download.file( url = urlTarget, destfile = file.path('data', filename) )
+  download.file( url = urlTarget, destfile = file.path('data', filename), mode = "wb" )
 })
 
 ## -- End DOWNLOAD FILES 
@@ -69,3 +73,17 @@ termsList %>%
   filter(!sentiment %in% c("positive", "negative")) %>%
   ggplot(aes( sentiment, fill = sentiment )) + geom_bar() + ggtitle('Voltaire\'s Emotional Content' )
 
+
+
+
+temp<- getSession( "https://archive.org/")
+
+tmp<- temp %>%
+  jump_to( urlTemp ) %>%
+  follow_link('PDF')
+  
+  
+  
+  
+  
+  

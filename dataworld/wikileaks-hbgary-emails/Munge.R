@@ -18,8 +18,7 @@
 
 library( tidyverse )
 library( rvest )
-library( stringi )
-library( SOAR )
+library( stringr )
 library( curl)
 
 
@@ -43,7 +42,7 @@ urlSessionHome<- 'https://wikileaks.org'
 
 # Download the data and return a cleaned list
 wikileaksEmailScrape <- function( index, url){
-  print( paste0("Reached count: ", index ))
+  # print( paste0("Reached count: ", index ))
   
   
   completeUrl<- paste0(url, index)
@@ -60,22 +59,28 @@ wikileaksEmailScrape <- function( index, url){
   completedSuccessfully = FALSE
   repeat({
     completedSuccessfully <- tryCatch(
-      expr = {emailText <- sessionObject %>% 
+      expr = {
+        emailText <- sessionObject %>% 
         jump_to( paste0(url, index) ) %>%
-        html_nodes(".email-content") %>%
-        html_text()},
+        html_nodes(".tab-content") %>%
+        html_text()
+        },
       error = function(e){ Sys.sleep(60); completedSuccessfully = FALSE}
     )
     print("loop")
     if( completedSuccessfully != FALSE ) break
   })
   
-  # emailText<- urlhtml %>%  html_nodes(".email-content") %>% html_text()
   
   
   emailTemp<- unlist(strsplit( emailText, "\n"))
+  str_replace_all( emailTemp, pattern = '^>+|\t+', replacement = "")
+  str_detect(emailTemp, '\"\"')
   
-  emailData<- unlist(map(emailTemp,  gsub, pattern = "^>|\t|\n", replacement = ""))
+  emailTemp <- 
+  str_replace( emailTemp)
+  
+  
   emailData<- unlist(map( emailData, stri_trim))
   emailData<-  emailData[ which(emailData != "") ]
   
@@ -93,12 +98,10 @@ getSession<- function( urlTarget ){
 
 
 ##-- Main --##
-Store()
 
 sessionObject<- getSession( urlSessionHome )
 
 collectedEmails <- safely(map( 1:MAX_EMAIL_COUNT, wikileaksEmailScrape, url = url))
-Store( collectedEmails )
 
 write.csv(collectedEmails, file = paste0(filepath, "/CollectedEmails.csv" ))
 save( collectedEmails, file = paste0(filepath, "collectedEmails.RData" ))
