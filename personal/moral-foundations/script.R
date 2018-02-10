@@ -9,6 +9,21 @@ library( iotools )
 ##-- Functions
 ######
 
+# clean the work directory
+clearDirectory<- function(){
+  saveDir<- getwd()
+  fileTargets <- base::setdiff(
+    list.files( 'data', full.names = FALSE ),
+    list.dirs('data', recursive = FALSE, full.names = FALSE)
+  )
+  
+  setwd('data')
+  walk(fileTargets, file.remove)
+  
+  setwd(saveDir)
+  
+} # END clearDirectory
+
 # Iterate over and download all the files
 downloadDocuments <- function( docNumbers, urlBase){
   walk2( .x = docNumbers, .y = docNumbers, .f = function(.x, .y){
@@ -18,28 +33,19 @@ downloadDocuments <- function( docNumbers, urlBase){
     
     download.file( url = urlTarget, destfile = file.path('data', filename), mode = "wb" )
   })
-} # END downloadVoltaireDocuments
-
-
-
-
-# clean the work directory
-clearDirectory<- function(){
-  walk( file.path( 'data', list.files( 'data')), file.remove)
-}
-
-
-
+} # END downloadDocuments
 
 
 # iterate over document chunks and join sentiment data
 combineSentimentDocuments <- function(chunk){
   x <- dstrsplit( chunk, col_types = 'character', sep = ',')
   x$V2 <- NULL
-  x<- tolower(x)
-  sentimentFrame<- inner_join(x, nrcFrame, by = c('V1' = 'word') )
+  x$V1<- tolower( x$V1 )
+  
+  sentimentFrame<- x %>% inner_join(nrcFrame, by = c('V1' = 'word') )
   sentimentFrame$count <- 1
   sentimentFrame
+  
 } # END combineSentimentDocuments
 
 
@@ -70,47 +76,26 @@ sampleData <- function( completeDataset, sampleSize = 75000, graphTitle ){
 
 
 
-# 
-combinePaineSentimentDocs <- function( .x ){
-  textData<- readLines( .x )
-  
-  tempText<- textData %>%
-    str_split(' ') %>%
-    unlist() %>%
-    map( str_replace_all, pattern = '\\W', replacement = '' ) %>%
-    unlist() %>%
-    as_tibble() %>%
-    tail(., nrow(.) - 61 ) %>%
-    mutate(count = 1)
-  
-  colnames( tempText ) <- c('terms', 'count')
-  
-  result<-tempText %>%
-    inner_join( nrcFrame, by = c('terms' = 'word') ) %>%
-    # Only consider Plutchik sentiments
-    filter(!sentiment %in% c("positive", "negative"))
-  
-  result
-} # END combinePaineSentimentDocs
-
 
 
 ######
 ##-- Variables
 ######
 
-# download link for voltaire docuemnts.
+# download link for docuemnts.
 urlVoltaireBase <- "https://ia801406.us.archive.org/10/items/worksofvoltairec%02dvolt/worksofvoltairec%02dvolt.pdf"
-urlPaineBase<- "http://www.gutenberg.org/cache/epub/374%d/pg374%d.txt"
+urlPaineBase    <- "https://ia802704.us.archive.org/0/items/lifewritingsofth%02dpain/lifewritingsofth%02dpain.pdf"
 
+urlBurkeBAse <- "https://ia802706.us.archive.org/24/items/correspondencer01bourgoog/correspondencer01bourgoog.pdf"
 
 # iterate through with voltaire documents
-voltaireDocumentNumbers<- seq(3, 22, 1)
+voltaireDocumentNumbers<- seq(4, 22, 1)
 
 # iterate through with paine documents
-paineDocumentNumbers<- 1:3
+paineDocumentNumbers<- seq(3, 9, 1)
 
-
+# iterate through with burke documents
+burkeDocumentNumbers <- seq(1, 4, 1)
 
 
 
@@ -126,23 +111,40 @@ nrcFrame<- get_sentiments('nrc')
 # download voltaires
 downloadDocuments( voltaireDocumentNumbers, urlVoltaireBase )
 
+# Run parsing script
+system2('python3', 'script.py')
+
 # create sentiment frame for analysis
-termsList <- collectTermsList()
+voltaireTermsList <- collectTermsList()
 
 # generate Voltaire's Sentiments.
-voltaireGraph <- sampleData( termsList, graphTitle = "Voltaire's Sentiments" )
+voltaireGraph <- sampleData( voltaireTermsList, graphTitle = "Voltaire's Sentiments" )
 ## END VOLTAIRE
 
+clearDirectory()
 
 ## Thomas Paine documents
+# download paines
 downloadDocuments( paineDocumentNumbers, urlPaineBase )
 
-files<- file.path( 'data', list.files('data'))
+# Run parsing script
+system2('python3', 'script.py')
 
-termsList<- map( files, combinePaineSentimentDocs ) %>% bind_rows()
-paineGraph <- sampleData( termsList, sampleSize = 10000, graphTitle = "Thomas Paine's Sentiments")
+# create sentiment frame for analysis
+paineTermsList <- collectTermsList()
 
-paineGraph
+paineGraph <- sampleData( paineTermsList, graphTitle = "Paine's Sentiments" )
+## END PAINE
+
+clearDirectory()
+
+## Edmond Burke documents
+
+
+
+
+# Run parsing script
+system2('python3', 'script.py')
 
 
 
@@ -154,12 +156,8 @@ paineGraph
 ##--- PLAY 
 
 # load the data
-data<- read_csv('data/terms.output', col_names = FALSE, progress = FALSE)[,1]
+data<- read_csv('data/terms.output', col_names = FALSE, progress = FALSE)
 colnames( data ) <- c('terms')
-
-
-
-
 
 
 
