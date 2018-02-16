@@ -85,17 +85,20 @@ sampleData <- function( completeDataset, sampleSize = 75000, graphTitle ){
 # download link for docuemnts.
 urlVoltaireBase <- "https://ia801406.us.archive.org/10/items/worksofvoltairec%02dvolt/worksofvoltairec%02dvolt.pdf"
 urlPaineBase    <- "https://ia802704.us.archive.org/0/items/lifewritingsofth%02dpain/lifewritingsofth%02dpain.pdf"
+urlBurkeBase <- "https://ia802701.us.archive.org/10/items/burkeworks%02dburkuoft/burkeworks%02dburkuoft.pdf"
 
-urlBurkeBAse <- "https://ia802706.us.archive.org/24/items/correspondencer01bourgoog/correspondencer01bourgoog.pdf"
+
 
 # iterate through with voltaire documents
-voltaireDocumentNumbers<- seq(4, 22, 1)
+voltaireDocumentNumbers<- 4:22
 
 # iterate through with paine documents
-paineDocumentNumbers<- seq(3, 9, 1)
+paineDocumentNumbers<- 3:9
 
 # iterate through with burke documents
-burkeDocumentNumbers <- seq(1, 4, 1)
+burkeDocumentNumbers <- 1:6
+burkeDocumentNumbers <- burkeDocumentNumbers[-3]
+
 
 
 
@@ -139,14 +142,17 @@ paineGraph <- sampleData( paineTermsList, graphTitle = "Paine's Sentiments" )
 clearDirectory()
 
 ## Edmond Burke documents
-
-
-
+# download burke
+downloadDocuments( burkeDocumentNumbers, urlBurkeBase)
 
 # Run parsing script
 system2('python3', 'script.py')
 
+# create sentiment frame for analysis
+burkeTermsList <- collectTermsList()
 
+burkeGraph <- sampleData( burkeTermsList, graphTitle = "Burke's Sentiments")
+burkeGraph
 
 
 
@@ -158,23 +164,4 @@ system2('python3', 'script.py')
 # load the data
 data<- read_csv('data/terms.output', col_names = FALSE, progress = FALSE)
 colnames( data ) <- c('terms')
-
-
-
-
-
-
-results <- termsList %>%
-  # Only consider Plutchik sentiments
-  filter(!sentiment %in% c("positive", "negative")) %>%
-  # Group by sentiment
-  group_by(sentiment) %>% 
-  # Get total count by sentiment
-  summarize(total_count = sum(count))
-
-termsList %>%
-  # Only consider Plutchik sentiments
-  filter(!sentiment %in% c("positive", "negative")) %>%
-  ggplot(aes( sentiment, fill = sentiment )) + geom_bar() + ggtitle('Voltaire\'s Emotional Content' )
-  
   
