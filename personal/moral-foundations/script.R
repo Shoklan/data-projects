@@ -67,14 +67,26 @@ collectTermsList<- function( cores = 4){
 
 
 # sample the data and return a ggplot object
-sampleData <- function( completeDataset, sampleSize = 75000, graphTitle ){
+sampleData <- function( completeDataset, sampleSize = 75000){
   completeDataset %>%
+    # sample data
     sample_n( sampleSize ) %>%
-    filter(!sentiment %in% c("positive", "negative")) %>%
-    ggplot(aes( sentiment, fill = sentiment )) + geom_bar() + ggtitle( graphTitle )
+    # remove columns for positive, negative since it's not relevant
+    filter( !sentiment %in% c('negative', 'positive') ) %>%
+    group_by( sentiment ) %>%
+    # calculate the percentage of each sentiment
+    summarize( percentage =  n() / nrow( completeDataset %>% filter( !sentiment %in% c('negative', 'positive'))) )
+
 } # END sampleData
 
-
+# create and return the grpah.
+generateGraph <- function( data, graphTitle ){
+  data %>%
+  # generate graph
+    ggplot( aes( x = sentiment, y = percentage, fill = sentiment) ) +
+    geom_col() +
+    ggtitle( graphTitle )
+} # END generateGraph
 
 
 
@@ -121,7 +133,8 @@ system2('python3', 'script.py')
 voltaireTermsList <- collectTermsList()
 
 # generate Voltaire's Sentiments.
-voltaireGraph <- sampleData( voltaireTermsList, graphTitle = "Voltaire's Sentiments" )
+voltaireTibble <- sampleData( voltaireTermsList )
+voltaireGraph <- generateGraph( voltaireTibble , graphTitle = "Voltaire's Sentiments" )
 ## END VOLTAIRE
 
 clearDirectory()
@@ -136,7 +149,8 @@ system2('python3', 'script.py')
 # create sentiment frame for analysis
 paineTermsList <- collectTermsList()
 
-paineGraph <- sampleData( paineTermsList, graphTitle = "Paine's Sentiments" )
+paineTibble <- sampleData( paineTermsList  )
+paineGraph <- generateGraph( paineTibble, graphTitle = "Paine's Sentiments")
 ## END PAINE
 
 clearDirectory()
@@ -151,8 +165,8 @@ system2('python3', 'script.py')
 # create sentiment frame for analysis
 burkeTermsList <- collectTermsList()
 
-burkeGraph <- sampleData( burkeTermsList, graphTitle = "Burke's Sentiments")
-burkeGraph
+burkeTibble <- sampleData( burkeTermsList )
+burkeGraph <- generateGraph( burkeTibble, graphTitle = "Burke's Sentiments")
 
 
 
@@ -164,4 +178,14 @@ burkeGraph
 # load the data
 data<- read_csv('data/terms.output', col_names = FALSE, progress = FALSE)
 colnames( data ) <- c('terms')
+
+voltaireTermsList %>%
+  # filter on sentiment
+  filter( !sentiment %in% c('negative', 'positive') ) %>%
+  group_by( sentiment ) %>%
+  summarize( percentage =  n() / nrow( voltaireTermsList %>% filter( !sentiment %in% c('negative', 'positive'))) ) %>%
+  ggplot( aes( x = sentiment, y = percentage, fill = sentiment) ) +
+  geom_col()
   
+  
+
