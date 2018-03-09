@@ -8,14 +8,20 @@ library( stringr )
 library( tidytext )
 library( magrittr )
 library( data.table )
+library( tabulizer )
+library( fs )
 
 ##-- Variables
+
+# filenames
 directory  <- 'data'
 sampleName <- 'sample.csv'
 tweetsName <- 'tweets.csv'
 usersName  <- 'users.csv'
 
-# PDF url: https://democrats-intelligence.house.gov/uploadedfiles/exhibit_b.pdf
+# PDF url: 
+russianAcctPdf <- "https://democrats-intelligence.house.gov/uploadedfiles/exhibit_b.pdf"
+pdfDestTarget <- 'data/russianAcct.pdf'
 
 
 ##-- Functions
@@ -67,7 +73,38 @@ readUsername <- function(){
 } # END readUsername
 
 
+# Download the usernames of Russian Accounts
+downloadAcctPdf <- function(){
+  download.file(russianAcctPdf, destfile = pdfDestTarget)
+} # END downloadAcctPdf
 
+
+# collect the russian id, username data from the pdf file
+readRussianAccts <- function(){
+  # convert the data to csv files
+  extract_tables(file = pdfDestTarget, method = "csv", columns = list(2))
+  
+  # collect the names of all the files
+  files <- dir_ls('data') %>% 
+  str_match('russian.*csv') %>% 
+  as.vector() %>% 
+  Filter( function(.x){ !is.na(.x)}, .) %>%
+  paste0('data/', .) %>%
+  sort
+
+  # bind all the data together
+  russianAcctTempTibble <- files %>% 
+    map( read_csv, col_names = FALSE, col_types = c('cc') ) %>% 
+    bind_rows()
+  
+  # clean up header names
+  russianAcctTempTibble <- russianAcctTempTibble[-1,]
+  colnames( russianAcctTempTibble ) <- c('ID', 'username')
+  
+  # clean up directory 
+  file.remove( c(files, pdfDestTarget ))
+  russianAcctTempTibble
+} # END readRussianAccts
 
 
 
@@ -78,9 +115,15 @@ readUsername <- function(){
 
 ##-- Main
 
+# collect data
 sampleData <- readSample()
 tweetData <- readTweets()
 userData <- readUsername()
+
+# russian accts
+downloadAcctPdf()
+russianAccts <- readRussianAccts()
+
 
 # number of rows per dataset
 map( list( sampleData, tweetData, userData), nrow) %>% unlist
@@ -106,7 +149,16 @@ rts %>%
   `[`( x =(rts %>% top_n( 20 )), i = ., j=1)
 
 
+
+
+
 ##-- Play
+
+
+
+
+
+
 
 # collect offending accounts
 russianAccts <- rts %>%              
