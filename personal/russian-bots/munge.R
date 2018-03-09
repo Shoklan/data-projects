@@ -15,7 +15,7 @@ sampleName <- 'sample.csv'
 tweetsName <- 'tweets.csv'
 usersName  <- 'users.csv'
 
-
+# PDF url: https://democrats-intelligence.house.gov/uploadedfiles/exhibit_b.pdf
 
 
 ##-- Functions
