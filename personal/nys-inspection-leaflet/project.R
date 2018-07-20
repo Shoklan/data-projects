@@ -31,7 +31,7 @@ session <- getSession( targetUrl )
 content <- session %>%
   read_html( targetUrl ) %>%
   html_nodes( ".entry-content > p") %>%
-  head %>%
+  # head %>%
   html_text() %>%
   map( str_split, pattern = ",", n = 2) %>%
   map( unlist )
@@ -44,10 +44,31 @@ xml2::as_list() %>%
 
 
 
+# collect locations
+locations <- map( .x = content,
+                  .f = function( .x ){
+                    .x[1]
+                  }) %>% unlist
 
-# map( .x = content, .f = function( .x ){ map( .x[2] })
+# convert to latitudes and longitudes
+points <- tibble( lat = double( length( locations )), lon = double( length( locations )))
+for( item in 1:length( locations )){
+  coords <- NA
   
+  repeat{
+    Sys.sleep( 2 )
+    coords <- geocode( locations[ item ])
+    print( locations[ item ] )
+    print( coords )
+    points$lat[ item ] <-  coords$lat
+    points$lon[ item ] <- coords$lon
+    if( !is.na( sum( coords ))) break
+    Sys.sleep(10)
+  } # END repeat
+}
+
+
 # draw the map  
 leaflet() %>%
   addTiles() %>%
-  addMarkers( lng = point$lon, lat = point$lat)
+  addMarkers( lng = points$lon, lat = point$lat)
