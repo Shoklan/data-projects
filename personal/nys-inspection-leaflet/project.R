@@ -6,6 +6,7 @@ library( rvest )
 library( tidyverse )
 library( leaflet )
 library( ggmap )
+library( magrittr )
 
 
 ##-- Variables:
@@ -36,13 +37,6 @@ content <- session %>%
   map( str_split, pattern = ",", n = 2) %>%
   map( unlist )
 
-point <- geocode("ABBEY'S CATERING AND KIOSK LLC 7 ACORN VALLEY TRAIL")
-
-# got address, info
-xml2::as_list() %>% 
-  length
-
-
 
 # collect locations
 locations <- map( .x = content,
@@ -50,22 +44,33 @@ locations <- map( .x = content,
                     .x[1]
                   }) %>% unlist
 
+# let google know this is rochester
+locations <- map(locations, str_c, ", ROCHESTER") %>% unlist
+
 # convert to latitudes and longitudes
 points <- tibble( lat = double( length( locations )), lon = double( length( locations )))
 for( item in 1:length( locations )){
   coords <- NA
+  timer <- 0
   
   repeat{
     Sys.sleep( 2 )
     coords <- geocode( locations[ item ])
     print( locations[ item ] )
     print( coords )
-    points$lat[ item ] <-  coords$lat
-    points$lon[ item ] <- coords$lon
-    if( !is.na( sum( coords ))) break
+    
+    if( timer == 5 || !is.na( sum( as.numeric( coords )))){
+      points$lat[ item ] <- coords$lat
+      points$lon[ item ] <- coords$lon
+      break
+    }
     Sys.sleep(10)
+    timer <- timer +1
   } # END repeat
 }
+
+
+points %<>% filter( !is.na( lat ))
 
 
 # draw the map  
